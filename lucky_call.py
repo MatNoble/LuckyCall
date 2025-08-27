@@ -1,0 +1,207 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+import pandas as pd
+import random
+import os
+import platform
+from datetime import datetime
+
+# 跨平台字体设置
+def get_ui_font(size=14, weight="bold"):
+    system = platform.system()
+    if system == "Windows":
+        return ("Microsoft YaHei UI", size, weight)
+    elif system == "Darwin":  # macOS
+        return ("PingFang SC", size, weight)
+    else:  # Linux / Ubuntu
+        return ("fangsong ti", size, weight)
+
+# 基础目录
+BASE_DIR = "classes"
+if not os.path.exists(BASE_DIR):
+    os.makedirs(BASE_DIR)
+    
+def center_window(root, width, height):
+    # 获取屏幕宽高
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+
+    # 计算左上角坐标
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 2
+
+    # 设置窗口大小和位置
+    root.geometry(f"{width}x{height}+{x}+{y}")
+
+# ---------- 第一步：课程选择界面 ----------
+def select_course():
+    def confirm_selection():
+        selected = course_var.get()
+        if not selected:
+            messagebox.showwarning("提示", "请选择一个课程班！")
+            return
+        root.destroy()
+        launch_main_app(selected)
+
+    courses = [d for d in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, d))]
+    if not courses:
+        messagebox.showerror("错误", f"请在 {BASE_DIR}/ 下创建课程班文件夹，并放置 students.csv")
+        return
+
+    root = tk.Tk()
+    root.title("选择课程班")
+    root.configure(bg="#f0f8ff")
+
+    tk.Label(root, text="📚 请选择课程班：", font=get_ui_font(16), bg="#f0f8ff").pack(pady=20)
+
+    course_var = tk.StringVar()
+    course_menu = ttk.Combobox(
+        root,
+        textvariable=course_var,
+        values=courses,
+        state="readonly",
+        font=get_ui_font(10, "normal"),
+        width=30)
+    
+    course_menu.pack(pady=10)
+
+    tk.Button(
+        root,
+        text="确认",
+        font=get_ui_font(14),
+        bg="#4caf50",
+        fg="white",
+        activebackground="#388e3c",
+        relief="flat",
+        padx=20,
+        pady=10,
+        command=confirm_selection).pack(pady=10)
+    
+    # 调用居中函数
+    center_window(root, 500, 309)
+
+    root.mainloop()
+
+# ---------- 第二步：主程序 ----------
+def launch_main_app(course_name):
+    course_dir = os.path.join(BASE_DIR, course_name)
+    students_file = os.path.join(course_dir, "students.csv")
+    records_file = os.path.join(course_dir, "records.csv")
+
+    # 初始化学生数据
+    if not os.path.exists(students_file):
+        messagebox.showerror("错误", f"{course_name} 缺少 students.csv 文件")
+        return
+    # 读取学生数据
+    students_df = pd.read_csv(students_file, encoding="utf-8")
+
+    # 初始化记录文件
+    if not os.path.exists(records_file):
+        pd.DataFrame(columns=["时间", "学号", "姓名", "缺勤", "评语"]).to_csv(records_file, index=False, encoding="utf-8-sig")
+
+    # GUI 主窗口
+    root = tk.Tk()
+    root.title(f"🎯 幸运点 LuckyCall")
+    root.configure(bg="#f0f8ff")
+
+    title_label = tk.Label(root, text=f"{course_name}", font=get_ui_font(20), fg="#1e90ff", bg="#f0f8ff")
+    title_label.pack(pady=20)
+
+    # 显示选中学生
+    student_var = tk.StringVar(value="谁会是幸运儿呢？")
+    student_label = tk.Label(root, textvariable=student_var, font=get_ui_font(18), fg="#333", bg="#f0f8ff")
+    student_label.pack(pady=20)
+
+    # 状态选择
+    status_frame = tk.Frame(root, bg="#f0f8ff")
+    status_frame.pack(pady=10)
+    status_label = tk.Label(status_frame, text="缺勤情况：", font=get_ui_font(12), bg="#f0f8ff")
+    status_label.grid(row=0, column=0, padx=5)
+    attendance_var = tk.StringVar(value="否")
+
+    # 评语选择
+    remark_frame = tk.Frame(root, bg="#f0f8ff")
+    remark_frame.pack(pady=10)
+    remark_label = tk.Label(remark_frame, text="评语：", font=get_ui_font(12), bg="#f0f8ff")
+    remark_label.grid(row=0, column=0, padx=5)
+    remark_var = tk.StringVar(value="合格")
+    remarks = ["优秀", "良好", "合格", "需努力"]
+    remark_menu = ttk.Combobox(remark_frame, textvariable=remark_var, values=remarks, state="readonly")
+    remark_menu.grid(row=0, column=1, padx=5)
+
+    # 随机点名逻辑
+    current_student = {"data": None}
+
+    def pick_random_student():
+        idx = random.randint(0, len(students_df)-1)
+        current_student["data"] = students_df.iloc[idx]
+        student_var.set(f"{current_student['data']['学号']} - {current_student['data']['姓名']}")
+        # 每次点名后重置选项为“否”
+        attendance_var.set("否")
+        # 每次点名后重置评语选项
+        remark_var.set("合格")
+        # 每次点名后都显示评语选项
+        toggle_remark_widgets()
+
+    def save_record():
+        if current_student["data"] is None:
+            messagebox.showwarning("提示", "请先随机点名！")
+            return
+        
+        # --- 修改点 2: 根据缺勤状态决定评语字段 ---
+        attendance_status = attendance_var.get()
+        if attendance_status == "是":
+            # 如果缺勤，评语设为None或空字符串
+            final_remark = ""
+        else:
+            final_remark = remark_var.get()
+
+        record = {
+            "时间": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "学号": current_student["data"]["学号"],
+            "姓名": current_student["data"]["姓名"],
+            "缺勤": attendance_status,
+            "评语": final_remark # 使用处理后的评语
+        }
+        df = pd.read_csv(records_file)
+        df = pd.concat([df, pd.DataFrame([record])], ignore_index=True)
+        # 将空值保存为NaN，再to_csv时会处理为空字符串
+        df.to_csv(records_file, index=False, encoding="utf-8-sig")
+        messagebox.showinfo("保存成功", f"{current_student['data']['姓名']} 的记录已保存！")
+
+    # --- 修改点 1: 增加一个控制评语控件可见性的函数 ---
+    def toggle_remark_widgets():
+        if attendance_var.get() == "是":
+            # 如果缺勤，则隐藏评语标签和下拉框
+            remark_label.grid_remove()
+            remark_menu.grid_remove()
+        else:
+            # 否则显示
+            remark_label.grid()
+            remark_menu.grid()
+
+    # 创建单选按钮，并绑定到同一个变量和同一个回调函数
+    # 使用command参数，当单选按钮状态改变时，会调用toggle_remark_widgets函数
+    ttk.Radiobutton(status_frame, text="否", variable=attendance_var, value="否", command=toggle_remark_widgets).grid(row=0, column=1, padx=5)
+    ttk.Radiobutton(status_frame, text="是", variable=attendance_var, value="是", command=toggle_remark_widgets).grid(row=0, column=2, padx=5)
+    
+    # 按钮区
+    btn_frame = tk.Frame(root, bg="#f0f8ff")
+    btn_frame.pack(pady=20)
+
+    pick_button = tk.Button(btn_frame, text="🎲 随机幸运儿", font=get_ui_font(14), bg="#4cafef", fg="white",
+                            activebackground="#2196f3", relief="flat", padx=20, pady=10, command=pick_random_student)
+    pick_button.grid(row=0, column=0, padx=10)
+
+    save_button = tk.Button(btn_frame, text="💾 保存记录", font=get_ui_font(14), bg="#4caf50", fg="white",
+                            activebackground="#388e3c", relief="flat", padx=20, pady=10, command=save_record)
+    save_button.grid(row=0, column=1, padx=10)
+    
+    # 调用居中函数
+    center_window(root, 800, 488)
+
+    root.mainloop()
+
+# ---------- 程序入口 ----------
+if __name__ == "__main__":
+    select_course()
