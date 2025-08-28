@@ -189,7 +189,7 @@ def launch_main_app(course_name):
         df.to_csv(records_file, index=False, encoding="utf-8-sig")
         messagebox.showinfo("保存成功", f"{current_student['data']['姓名']} 的记录已保存！")
 
-    # --- 修改点 1: 增加一个控制评语控件可见性的函数 ---
+    # 控制评语控件可见性的函数
     def toggle_remark_widgets():
         if attendance_var.get() == "是":
             # 如果缺勤，则隐藏评语标签和下拉框
