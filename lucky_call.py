@@ -5,6 +5,7 @@ import random
 import os
 import platform
 from datetime import datetime
+from PIL import Image, ImageTk
 
 # 跨平台字体设置
 def get_ui_font(size=14, weight="bold"):
@@ -104,8 +105,27 @@ def launch_main_app(course_name):
     root.title(f"🎯 幸运点 LuckyCall")
     root.configure(bg="#f0f8ff")
 
+    # 加载并显示 Logo
+    logo_path = "./icon/school_logo.png"  # 请确保这个文件和你的脚本在同一个目录下
+    logo_image_tk = None # 初始化为 None
+    if os.path.exists(logo_path):
+        try:
+            # 打开图片并调整大小
+            logo_image_pil = Image.open(logo_path)
+            logo_image_pil = logo_image_pil.resize((150, 150), Image.Resampling.LANCZOS)
+            # 转换为 Tkinter 格式
+            logo_image_tk = ImageTk.PhotoImage(logo_image_pil)
+            # 创建一个 Label 控件来显示图片
+            logo_label = tk.Label(root, image=logo_image_tk, bg="#f0f8ff")
+            logo_label.image = logo_image_tk  # 保持对图片的引用
+            # 使用 place 布局，固定在左上角
+            logo_label.place(x=40, y=20) # 这里的 x 和 y 是像素坐标，可以根据需要调整
+        except Exception as e:
+            print(f"无法加载 Logo 图片: {e}")
+            
+    # 课程名称标签
     title_label = tk.Label(root, text=f"{course_name}", font=get_ui_font(20), fg="#1e90ff", bg="#f0f8ff")
-    title_label.pack(pady=20)
+    title_label.pack(pady=(80 if logo_image_tk else 40, 20)) # 根据是否有logo调整上边距
 
     # 显示选中学生
     student_var = tk.StringVar(value="谁会是幸运儿呢？")
