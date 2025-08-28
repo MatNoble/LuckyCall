@@ -94,7 +94,7 @@ def launch_main_app(course_name):
         messagebox.showerror("错误", f"{course_name} 缺少 students.csv 文件")
         return
     # 读取学生数据
-    students_df = pd.read_csv(students_file, encoding="utf-8")
+    students_df = pd.read_csv(students_file, encoding="gbk")
 
     # 初始化记录文件
     if not os.path.exists(records_file):
