@@ -58,7 +58,7 @@ python3 lucky_call.py
 ### 打包命令
 ```sh
 # Windows
-pyinstaller --onefile --windowed --icon=icon\lucky_call.ico lucky_call.py
+pyinstaller --onefile --windowed --icon=icon\\lucky_call.ico lucky_call.py
 
 # Linux
 pyinstaller --onefile --windowed --icon=icon/lucky_call.ico lucky_call.py

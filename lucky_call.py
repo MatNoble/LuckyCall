@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import pandas as pd
+import chardet
 import random
 import os
 import platform
@@ -93,9 +94,31 @@ def launch_main_app(course_name):
     if not os.path.exists(students_file):
         messagebox.showerror("错误", f"{course_name} 缺少 students.csv 文件")
         return
-    # 读取学生数据
-    students_df = pd.read_csv(students_file, encoding="gbk")
-    # students_df = pd.read_csv(students_file) # for UTF-8 source file
+    
+    # 使用 chardet 检测文件编码
+    try:
+        with open(students_file, 'rb') as f:
+            # 读取文件前10000个字节进行检测，这通常足够了
+            result = chardet.detect(f.read(10000))
+            detected_encoding = result['encoding']
+            print(f"检测到的文件编码为: {detected_encoding}")
+    
+        # 如果检测到 GB2312，则尝试使用 GBK
+        if detected_encoding and detected_encoding.upper() == 'GB2312':
+            actual_encoding = 'gbk'
+        else:
+            actual_encoding = detected_encoding
+    
+        # 使用最终确定的编码读取文件
+        students_df = pd.read_csv(students_file, encoding=actual_encoding)
+        print("文件读取成功。")
+    
+    except FileNotFoundError:
+        print(f"错误：文件 '{students_file}' 未找到。")
+    except UnicodeDecodeError as e:
+        print(f"读取文件失败，请检查编码。错误信息: {e}")
+    except Exception as e:
+        print(f"读取文件时发生未知错误: {e}")
 
     # 初始化记录文件
     if not os.path.exists(records_file):
@@ -257,7 +280,7 @@ def launch_main_app(course_name):
                             activebackground="#c2185b", relief="flat", padx=20, pady=10, command=stop_roll)
     stop_button.grid(row=0, column=1, padx=10)
 
-    save_button = tk.Button(btn_frame, text="💾 保存记录", font=get_ui_font(14), bg="#4caf50", fg="white",
+    save_button = tk.Button(btn_frame, text="💾 保存", font=get_ui_font(14), bg="#4caf50", fg="white",
                             activebackground="#388e3c", relief="flat", padx=20, pady=10, command=save_record)
     save_button.grid(row=0, column=2, padx=10)
 
@@ -290,7 +313,7 @@ def launch_main_app(course_name):
     update_stats()
     
     # 调用居中函数
-    center_window(root, 800, 488)
+    center_window(root, 900, 549)
 
     root.mainloop()
 
