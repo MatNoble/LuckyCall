@@ -2,3 +2,5 @@ records.csv
 
 .vscode/
 build/
+
+dist/
