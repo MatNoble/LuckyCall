@@ -7,7 +7,9 @@
 - 会回答：可以产生一种自豪感，对学习更有兴趣
 - 不会回答：在老师解答时，对问题的印象更深刻
 
-> **项目地址：** https://github.com/MatNoble/LuckyCall/tree/TKK  
+> **项目地址：** 
+- GitHub: https://github.com/MatNoble/LuckyCall/tree/TKK
+- GitEE: https://gitee.com/matnoble/lucky-call/tree/TKK/
 > 注：该分支用于厦门大学嘉庚学院
 
 ## 功能简介
